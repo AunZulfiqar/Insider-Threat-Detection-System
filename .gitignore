@@ -21,6 +21,7 @@ logs/
 test_insider_threat.db
 .coverage
 coverage.xml
+coverage.json
 htmlcov/
 
 # --- Environment / secrets ---

@@ -25,9 +25,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          # setuptools: coverage-badge imports pkg_resources internally, which
-          # Python 3.13's default venv/CI image no longer bundles.
-          pip install pytest-cov coverage-badge setuptools
+          pip install pytest-cov
 
       - name: Run tests with coverage
         run: |
@@ -35,7 +33,9 @@ jobs:
           coverage report -m
 
       - name: Generate coverage badge
-        run: coverage-badge -o docs/coverage.svg -f
+        run: |
+          coverage json -o coverage.json
+          python scripts/make_coverage_badge.py coverage.json docs/coverage.svg
 
       - name: Commit updated coverage badge
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'

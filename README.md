@@ -181,8 +181,9 @@ shared/public machine, and `instance/*.db` is gitignored for exactly this reason
 pytest                                       # requirements.txt already includes pytest
 
 # Optional, for a local coverage report / badge (CI does this automatically):
-pip install pytest-cov coverage-badge
+pip install pytest-cov
 coverage run -m pytest && coverage report
+coverage json -o coverage.json && python scripts/make_coverage_badge.py coverage.json docs/coverage.svg
 ```
 
 `tests/test_keyword_detector.py` and `tests/test_risk_scorer.py` cover the core scoring
