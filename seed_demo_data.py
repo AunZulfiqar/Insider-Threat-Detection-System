@@ -1,4 +1,4 @@
-﻿"""
+"""
 Demo data seeder.
 
 Populates a small, entirely synthetic set of events and alerts so the
@@ -64,8 +64,16 @@ def make_event_id(user, ts, etype):
     return hashlib.md5(f"{user}{ts}{etype}{random.random()}".encode()).hexdigest()[:16]
 
 
+def force_weekday(ts):
+    """Nudge back to the nearest weekday so 'normal' events don't randomly
+    land on a Saturday/Sunday and get flagged as weekend activity."""
+    while ts.weekday() >= 5:
+        ts -= timedelta(days=1)
+    return ts
+
+
 def business_hours_ts(days_ago):
-    ts = datetime.now() - timedelta(days=days_ago)
+    ts = force_weekday(datetime.now() - timedelta(days=days_ago))
     return ts.replace(hour=random.randint(9, 17), minute=random.randint(0, 59), second=0, microsecond=0)
 
 

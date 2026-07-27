@@ -1,4 +1,4 @@
-﻿"""
+"""
 Shared pytest fixtures.
 
 Run from the project root:
@@ -43,7 +43,12 @@ def app():
     with flask_app.app_context():
         _db.session.remove()
         _db.drop_all()
-    os.remove(db_path)
+        _db.engine.dispose()  # release SQLite's file handle before deleting it (Windows needs this)
+
+    try:
+        os.remove(db_path)
+    except PermissionError:
+        pass  # best-effort cleanup of a throwaway temp file; not worth failing the test run over
     del os.environ["ADMIN_PASSWORD"]
 
 

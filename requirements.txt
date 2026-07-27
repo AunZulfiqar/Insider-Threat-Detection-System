@@ -1,16 +1,19 @@
-﻿Flask==3.0.0
+# Versions below are pinned to what's actually verified working on Python 3.13
+# (the original pins — numpy==1.26.2 in particular — have no prebuilt wheel
+# for 3.13 and fail to build from source without a C compiler installed).
+Flask==3.0.0
 Flask-SQLAlchemy==3.1.1
 Flask-Login==0.6.3
 Flask-WTF==1.2.1
-pandas==2.1.4
-numpy==1.26.2
-scikit-learn==1.3.2
-joblib==1.3.2
+pandas==2.3.3
+numpy==2.2.6
+scikit-learn==1.7.2
+joblib==1.5.2
 plotly==5.18.0
-python-dateutil==2.8.2
-Werkzeug==3.0.1
+python-dateutil==2.9.0.post0
+Werkzeug==3.1.3
 gunicorn==21.2.0
-psutil==5.9.6
-APScheduler==3.10.4
-pytz==2023.3
+psutil==7.1.3
+APScheduler==3.11.2
+pytz==2025.2
 pytest==8.3.3
