@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block title %}Users - Insider Threat Detection{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-users"></i> Monitored Users</h2>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card success">
+                <div class="card-body">
+                    <h6 class="text-muted">Total Users</h6>
+                    <h3>{{ total_users }}</h3>
+                    <small class="text-muted">Active profiles</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card critical">
+                <div class="card-body">
+                    <h6 class="text-muted">Critical Risk</h6>
+                    <h3 class="text-critical">{{ critical_users }}</h3>
+                    <small class="text-muted">Immediate attention</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card high">
+                <div class="card-body">
+                    <h6 class="text-muted">High Risk</h6>
+                    <h3 class="text-high">{{ high_risk_users }}</h3>
+                    <small class="text-muted">Needs monitoring</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card medium">
+                <div class="card-body">
+                    <h6 class="text-muted">Medium Risk</h6>
+                    <h3 class="text-medium">{{ medium_risk_users }}</h3>
+                    <small class="text-muted">Watch closely</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-search"></i> Search & Filter Users</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('dashboard.users') }}">
+                <div class="row">
+                    <div class="col-md-3">
+                        <label>Search</label>
+                        <input type="text" name="search" class="form-control" 
+                               value="{{ current_filters.search or '' }}"
+                               placeholder="User ID or Name">
+                    </div>
+                    <div class="col-md-2">
+                        <label>Department</label>
+                        <input type="text" name="department" class="form-control"
+                               value="{{ current_filters.department or '' }}"
+                               placeholder="Department">
+                    </div>
+                    <div class="col-md-2">
+                        <label>Role</label>
+                        <input type="text" name="role" class="form-control"
+                               value="{{ current_filters.role or '' }}"
+                               placeholder="Role">
+                    </div>
+                    <div class="col-md-2">
+                        <label>Risk Level</label>
+                        <select name="risk_level" class="form-select">
+                            <option value="">All Levels</option>
+                            <option value="CRITICAL" {% if current_filters.risk_level == 'CRITICAL' %}selected{% endif %}>Critical</option>
+                            <option value="HIGH" {% if current_filters.risk_level == 'HIGH' %}selected{% endif %}>High</option>
+                            <option value="MEDIUM" {% if current_filters.risk_level == 'MEDIUM' %}selected{% endif %}>Medium</option>
+                            <option value="LOW" {% if current_filters.risk_level == 'LOW' %}selected{% endif %}>Low</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label>&nbsp;</label>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i> Search
+                            </button>
+                            <a href="{{ url_for('dashboard.users') }}" class="btn btn-secondary">
+                                <i class="fas fa-redo"></i> Clear
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-list"></i> Users 
+                <span class="badge bg-secondary">{{ users|length }} shown</span>
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if users %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>User ID</th>
+                            <th>Full Name</th>
+                            <th>Department</th>
+                            <th>Role</th>
+                            <th>Supervisor</th>
+                            <th>Total Alerts</th>
+                            <th>High Risk Alerts</th>
+                            <th>Risk Level</th>
+                            <th>Last Activity</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('dashboard.user_detail', user_id=user.user_id) }}">
+                                    <strong>{{ user.user_id }}</strong>
+                                </a>
+                            </td>
+                            <td>{{ user.full_name or '-' }}</td>
+                            <td>{{ user.department or '-' }}</td>
+                            <td>{{ user.role or '-' }}</td>
+                            <td>{{ user.supervisor or '-' }}</td>
+                            <td>
+                                <span class="badge bg-info">{{ user.total_alerts or 0 }}</span>
+                            </td>
+                            <td>
+                                {% if user.high_risk_alerts and user.high_risk_alerts > 0 %}
+                                    <span class="badge badge-critical">{{ user.high_risk_alerts }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">0</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge 
+                                    {% if user.current_risk_level == 'CRITICAL' %}badge-critical
+                                    {% elif user.current_risk_level == 'HIGH' %}badge-high
+                                    {% elif user.current_risk_level == 'MEDIUM' %}badge-medium
+                                    {% elif user.current_risk_level == 'LOW' %}badge-low
+                                    {% else %}badge-normal{% endif %}">
+                                    {{ user.current_risk_level or 'LOW' }}
+                                </span>
+                            </td>
+                            <td>
+                                <small>
+                                    {% if user.last_activity %}
+                                        {{ user.last_activity.strftime('%Y-%m-%d %H:%M') }}
+                                    {% else %}
+                                        <span class="text-muted">Never</span>
+                                    {% endif %}
+                                </small>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('dashboard.user_detail', user_id=user.user_id) }}" 
+                                   class="btn btn-sm btn-primary">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if pagination and pagination.pages > 1 %}
+            <nav aria-label="Users pagination" class="mt-3">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('dashboard.users', page=pagination.prev_num,
+                           search=current_filters.search,
+                           department=current_filters.department,
+                           role=current_filters.role,
+                           risk_level=current_filters.risk_level) }}">
+                            Previous
+                        </a>
+                    </li>
+                    
+                    {% for page_num in pagination.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=2) %}
+                        {% if page_num %}
+                            <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                                <a class="page-link" href="{{ url_for('dashboard.users', page=page_num,
+                                   search=current_filters.search,
+                                   department=current_filters.department,
+                                   role=current_filters.role,
+                                   risk_level=current_filters.risk_level) }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('dashboard.users', page=pagination.next_num,
+                           search=current_filters.search,
+                           department=current_filters.department,
+                           role=current_filters.role,
+                           risk_level=current_filters.risk_level) }}">
+                            Next
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-users-slash fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No users found</h5>
+                <p class="text-muted">Try adjusting your search filters</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.badge {
+    font-size: 0.85rem;
+}
+</style>
+{% endblock %}

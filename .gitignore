@@ -1,0 +1,33 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# --- Virtual environments ---
+venv/
+env/
+.venv/
+
+# --- Real application data (never commit — see seed_demo_data.py instead) ---
+instance/
+data/raw/
+logs/
+*.log
+
+# --- Test artifacts ---
+.pytest_cache/
+test_insider_threat.db
+
+# --- Environment / secrets ---
+.env
+.env.*
+
+# --- Editor / OS ---
+.vscode/
+.idea/
+.claude/
+Thumbs.db
+.DS_Store
+desktop.ini

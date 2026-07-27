@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block title %}Model Retraining - Insider Threat Detection{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-arrow-clockwise"></i> Model Retraining</h2>
+            <p class="text-muted mb-0">Retrain ML models using analyst feedback on alerts</p>
+        </div>
+        <div>
+            <a href="{{ url_for('dashboard.settings') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Settings
+            </a>
+        </div>
+    </div>
+
+    <!-- Feedback Statistics Overview -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stat-card normal">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Total Alerts</h6>
+                            <h3 class="mb-0">{{ total_alerts }}</h3>
+                        </div>
+                        <div class="text-normal">
+                            <i class="fas fa-exclamation-triangle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stat-card critical">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">True Threats</h6>
+                            <h3 class="mb-0">{{ closed_threats }}</h3>
+                            <small class="text-muted">Closed alerts</small>
+                        </div>
+                        <div class="text-critical">
+                            <i class="fas fa-shield-virus fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stat-card medium">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">False Positives</h6>
+                            <h3 class="mb-0">{{ false_positives }}</h3>
+                            <small class="text-muted">Marked as safe</small>
+                        </div>
+                        <div class="text-medium">
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stat-card high">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Training Samples</h6>
+                            <h3 class="mb-0">{{ closed_threats + false_positives }}</h3>
+                            <small class="text-muted">Labeled data</small>
+                        </div>
+                        <div class="text-high">
+                            <i class="fas fa-brain fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Retraining Form -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-cogs"></i> Retrain Models</h5>
+                </div>
+                <div class="card-body">
+                    {% if closed_threats + false_positives >= 10 %}
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i>
+                        <strong>Ready for retraining!</strong> You have {{ closed_threats + false_positives }} labeled samples.
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Need more data:</strong> At least 10 labeled alerts required. Currently have {{ closed_threats + false_positives }}.
+                    </div>
+                    {% endif %}
+
+                    <form method="POST" action="{{ url_for('dashboard.retrain_models') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="mb-3">
+                            <label class="form-label">Look Back Period (Days)</label>
+                            <input type="number" class="form-control" name="days_back" 
+                                   value="30" min="1" max="365">
+                            <small class="text-muted">
+                                Use feedback from alerts within the last N days
+                            </small>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <strong><i class="fas fa-info-circle"></i> What happens during retraining:</strong>
+                            <ol class="mb-0 mt-2">
+                                <li>Collects labeled alerts (TRUE/FALSE POSITIVE)</li>
+                                <li>Trains supervised classifier</li>
+                                <li>Updates Isolation Forest</li>
+                                <li>Creates whitelist patterns</li>
+                                <li>Suggests optimal thresholds</li>
+                            </ol>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100" 
+                                {% if closed_threats + false_positives < 10 %}disabled{% endif %}>
+                            <i class="fas fa-arrow-clockwise"></i> Start Retraining
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- What Gets Retrained -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="fas fa-lightbulb"></i> What Gets Retrained?</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h6 class="text-primary"><i class="fas fa-robot"></i> Supervised Classifier</h6>
+                        <p class="text-muted mb-2">
+                            Learns to distinguish between true threats and false positives using Random Forest algorithm.
+                        </p>
+                        <ul class="small text-muted">
+                            <li>Predicts if an alert is likely a false positive</li>
+                            <li>Provides confidence scores</li>
+                            <li>Improves with more labeled data</li>
+                        </ul>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="text-success"><i class="fas fa-tree"></i> Isolation Forest</h6>
+                        <p class="text-muted mb-2">
+                            Updated to exclude false positive patterns from anomaly detection.
+                        </p>
+                        <ul class="small text-muted">
+                            <li>Retrained without false positive samples</li>
+                            <li>More accurate anomaly detection</li>
+                            <li>Reduces noise in future alerts</li>
+                        </ul>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="text-warning"><i class="fas fa-shield-alt"></i> Whitelist</h6>
+                        <p class="text-muted mb-2">
+                            Common false positive patterns automatically filtered.
+                        </p>
+                        <ul class="small text-muted">
+                            <li>Extracts patterns from false positives</li>
+                            <li>Automatically skips similar events</li>
+                            <li>Saves analyst time</li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h6 class="text-info"><i class="fas fa-sliders-h"></i> Thresholds</h6>
+                        <p class="text-muted mb-2">
+                            Analyzes feedback to suggest optimal risk thresholds.
+                        </p>
+                        <ul class="small text-muted">
+                            <li>Optimized based on actual data</li>
+                            <li>Balances detection vs false positives</li>
+                            <li>Can be applied in settings</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- How to Prepare Data -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-question-circle"></i> How to Prepare Training Data</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-success"><i class="fas fa-check"></i> For True Threats:</h6>
+                            <ol>
+                                <li>Go to <a href="{{ url_for('dashboard.alerts') }}">Alerts page</a></li>
+                                <li>Click "View Details" on a confirmed threat</li>
+                                <li>Change status to <span class="badge bg-danger">CLOSED</span></li>
+                                <li>Add resolution notes explaining why it's a threat</li>
+                                <li>Click "Update Alert"</li>
+                            </ol>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-warning"><i class="fas fa-times"></i> For False Positives:</h6>
+                            <ol>
+                                <li>Go to <a href="{{ url_for('dashboard.alerts') }}">Alerts page</a></li>
+                                <li>Click "View Details" on a benign alert</li>
+                                <li>Change status to <span class="badge bg-warning text-dark">FALSE POSITIVE</span></li>
+                                <li>Add notes explaining why it's safe</li>
+                                <li>Click "Update Alert"</li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info mt-3">
+                        <strong><i class="fas fa-lightbulb"></i> Best Practices:</strong>
+                        <ul class="mb-0">
+                            <li>Label at least 10 alerts before first retraining</li>
+                            <li>Try to balance true threats and false positives (50/50 is ideal)</li>
+                            <li>Add detailed resolution notes for better learning</li>
+                            <li>Retrain weekly or monthly as you label more alerts</li>
+                            <li>Monitor false positive rate to measure improvement</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        transition: all 0.3s;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 12px rgba(0,0,0,.15);
+    }
+    
+    .card-header {
+        font-weight: 600;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2><i class="fas fa-cog"></i> System Settings</h2>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show mt-3">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Detection Settings -->
+    <div class="card mt-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-shield-alt"></i> Detection Settings</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <hr>
+
+                <!-- Keywords Management -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h5><i class="fas fa-key"></i> Suspicious Keywords</h5>
+                        <p class="text-muted">Enter keywords that should trigger alerts (one per line)</p>
+                        <textarea name="suspicious_keywords" class="form-control" rows="12" 
+                                  placeholder="Enter keywords, one per line...">{% for keyword in settings.suspicious_keywords %}{{ keyword }}
+{% endfor %}</textarea>
+                        <small class="text-muted">
+                            Current keywords: <strong>{{ settings.suspicious_keywords|length }}</strong>
+                        </small>
+                    </div>
+                </div>
+
+                <hr>
+
+                <!-- Risk Thresholds -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h5><i class="fas fa-sliders-h"></i> Risk Score Thresholds</h5>
+                        <p class="text-muted">Set threshold values for risk level classification (0.0 - 1.0)</p>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">
+                            <i class="fas fa-exclamation-triangle text-danger"></i> Critical (≥)
+                        </label>
+                        <input type="number" step="0.01" min="0" max="1" class="form-control" 
+                               name="critical_threshold" value="{{ settings.critical_threshold }}">
+                        <small class="text-muted">Default: 0.9</small>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">
+                            <i class="fas fa-exclamation-circle text-warning"></i> High (≥)
+                        </label>
+                        <input type="number" step="0.01" min="0" max="1" class="form-control" 
+                               name="high_threshold" value="{{ settings.high_threshold }}">
+                        <small class="text-muted">Default: 0.7</small>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">
+                            <i class="fas fa-info-circle text-info"></i> Medium (≥)
+                        </label>
+                        <input type="number" step="0.01" min="0" max="1" class="form-control" 
+                               name="medium_threshold" value="{{ settings.medium_threshold }}">
+                        <small class="text-muted">Default: 0.4</small>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">
+                            <i class="fas fa-check-circle text-success"></i> Low (≥)
+                        </label>
+                        <input type="number" step="0.01" min="0" max="1" class="form-control" 
+                               name="low_threshold" value="{{ settings.low_threshold }}">
+                        <small class="text-muted">Default: 0.2</small>
+                    </div>
+                </div>
+
+                <hr>
+
+                <!-- Business Hours Configuration -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h5><i class="fas fa-clock"></i> Business Hours Configuration</h5>
+                        <p class="text-muted">Configure normal business hours for after-hours detection</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            <i class="fas fa-sunrise"></i> Business Hours Start
+                        </label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" name="business_hours_start" 
+                                   min="0" max="24" value="{{ settings.business_hours_start or 8 }}">
+                            <span class="input-group-text">:00</span>
+                        </div>
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle"></i> 
+                            Hour when business hours start (0-24). Example: 8 = 8:00 AM
+                        </small>
+                        <div class="mt-2">
+                            <small class="badge bg-info">
+                                Current: {{ settings.business_hours_start or 8 }}:00 
+                                ({{ '8:00 AM' if (settings.business_hours_start or 8) == 8 else ((settings.business_hours_start or 8)|string + ':00 AM' if (settings.business_hours_start or 8) < 12 else ((settings.business_hours_start or 8) - 12)|string + ':00 PM') }})
+                            </small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            <i class="fas fa-sunset"></i> Business Hours End
+                        </label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" name="business_hours_end" 
+                                   min="0" max="24" value="{{ settings.business_hours_end or 18 }}">
+                            <span class="input-group-text">:00</span>
+                        </div>
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle"></i> 
+                            Hour when business hours end (0-24). Example: 18 = 6:00 PM
+                        </small>
+                        <div class="mt-2">
+                            <small class="badge bg-info">
+                                Current: {{ settings.business_hours_end or 18 }}:00 
+                                ({{ '6:00 PM' if (settings.business_hours_end or 18) == 18 else ((settings.business_hours_end or 18)|string + ':00 AM' if (settings.business_hours_end or 18) < 12 else ((settings.business_hours_end or 18) - 12)|string + ':00 PM') }})
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+
+                <!-- Weekend Days Configuration -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h5><i class="fas fa-calendar-week"></i> Weekend Days</h5>
+                        <p class="text-muted">Select days that are considered weekends (non-work days)</p>
+                        <div class="weekend-days-selection p-3 bg-light rounded">
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input day-checkbox" type="checkbox" id="day_monday" 
+                                       name="monday_weekend" 
+                                       {% if settings.is_monday_weekend %}checked{% endif %}>
+                                <label class="form-check-label" for="day_monday">
+                                    <i class="fas fa-calendar-day"></i> Monday
+                                </label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input day-checkbox" type="checkbox" id="day_tuesday" 
+                                       name="tuesday_weekend" 
+                                       {% if settings.is_tuesday_weekend %}checked{% endif %}>
+                                <label class="form-check-label" for="day_tuesday">
+                                    <i class="fas fa-calendar-day"></i> Tuesday
+                                </label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input day-checkbox" type="checkbox" id="day_wednesday" 
+                                       name="wednesday_weekend" 
+                                       {% if settings.is_wednesday_weekend %}checked{% endif %}>
+                                <label class="form-check-label" for="day_wednesday">
+                                    <i class="fas fa-calendar-day"></i> Wednesday
+                                </label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input day-checkbox" type="checkbox" id="day_thursday" 
+                                       name="thursday_weekend" 
+                                       {% if settings.is_thursday_weekend %}checked{% endif %}>
+                                <label class="form-check-label" for="day_thursday">
+                                    <i class="fas fa-calendar-day"></i> Thursday
+                                </label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input day-checkbox" type="checkbox" id="day_friday" 
+                                       name="friday_weekend" 
+                                       {% if settings.is_friday_weekend %}checked{% endif %}>
+                                <label class="form-check-label" for="day_friday">
+                                    <i class="fas fa-calendar-day"></i> Friday
+                                </label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input day-checkbox" type="checkbox" id="day_saturday" 
+                                       name="saturday_weekend" 
+                                       {% if settings.is_saturday_weekend %}checked{% endif %}>
+                                <label class="form-check-label" for="day_saturday">
+                                    <i class="fas fa-calendar-day"></i> Saturday
+                                </label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input day-checkbox" type="checkbox" id="day_sunday" 
+                                       name="sunday_weekend" 
+                                       {% if settings.is_sunday_weekend %}checked{% endif %}>
+                                <label class="form-check-label" for="day_sunday">
+                                    <i class="fas fa-calendar-day"></i> Sunday
+                                </label>
+                            </div>
+                        </div>
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle"></i> Activities on selected days are flagged as weekend/after-hours
+                        </small>
+                        <div class="mt-2">
+                            <small class="badge bg-secondary">
+                                Default: Saturday & Sunday
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+
+                <!-- Quick Presets -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h5><i class="fas fa-magic"></i> Quick Presets</h5>
+                        <p class="text-muted">Apply common business hours configurations</p>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-secondary" onclick="setPreset('standard')">
+                                <i class="fas fa-briefcase"></i> Standard (Mon-Fri, 8AM-6PM)
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="setPreset('extended')">
+                                <i class="fas fa-clock"></i> Extended (Mon-Fri, 7AM-7PM)
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="setPreset('retail')">
+                                <i class="fas fa-store"></i> Retail (Mon-Sat, 9AM-9PM)
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="setPreset('24x7')">
+                                <i class="fas fa-infinity"></i> 24/7 Operations
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-save"></i> Save Settings
+                    </button>
+                    <a href="{{ url_for('dashboard.index') }}" class="btn btn-secondary btn-lg">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-check-input {
+    width: 4rem;
+    height: 2rem;
+    cursor: pointer;
+}
+
+.day-checkbox {
+    width: 1.2rem !important;
+    height: 1.2rem !important;
+    cursor: pointer;
+}
+
+.weekend-days-selection .form-check-inline {
+    margin-right: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.weekend-days-selection .form-check-label {
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.weekend-days-selection .form-check-input:checked ~ .form-check-label {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+.weekend-days-selection .form-check-input:not(:checked) ~ .form-check-label {
+    color: #0d6efd;
+}
+</style>
+
+<script>
+// Quick preset configurations
+function setPreset(preset) {
+    // Clear all weekend checkboxes first
+    document.querySelectorAll('[name$="_weekend"]').forEach(cb => cb.checked = false);
+    
+    switch(preset) {
+        case 'standard':
+            // Mon-Fri 8AM-6PM, Weekend: Sat-Sun
+            document.querySelector('[name="business_hours_start"]').value = 8;
+            document.querySelector('[name="business_hours_end"]').value = 18;
+            document.querySelector('[name="saturday_weekend"]').checked = true;
+            document.querySelector('[name="sunday_weekend"]').checked = true;
+            break;
+            
+        case 'extended':
+            // Mon-Fri 7AM-7PM, Weekend: Sat-Sun
+            document.querySelector('[name="business_hours_start"]').value = 7;
+            document.querySelector('[name="business_hours_end"]').value = 19;
+            document.querySelector('[name="saturday_weekend"]').checked = true;
+            document.querySelector('[name="sunday_weekend"]').checked = true;
+            break;
+            
+        case 'retail':
+            // Mon-Sat 9AM-9PM, Weekend: Sun only
+            document.querySelector('[name="business_hours_start"]').value = 9;
+            document.querySelector('[name="business_hours_end"]').value = 21;
+            document.querySelector('[name="sunday_weekend"]').checked = true;
+            break;
+            
+        case '24x7':
+            // 24/7 operations, no weekends
+            document.querySelector('[name="business_hours_start"]').value = 0;
+            document.querySelector('[name="business_hours_end"]').value = 24;
+            // No weekend days selected
+            break;
+    }
+    
+    // Visual feedback
+    const presetBtn = event.target.closest('button');
+    presetBtn.classList.add('btn-success');
+    setTimeout(() => presetBtn.classList.remove('btn-success'), 1000);
+}
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const start = parseInt(document.querySelector('[name="business_hours_start"]').value);
+    const end = parseInt(document.querySelector('[name="business_hours_end"]').value);
+    
+    if (start >= end && end !== 24) {
+        alert('Warning: Business hours start should be before end time!');
+        // Allow submit but warn user
+    }
+    
+    if (start < 0 || start > 24 || end < 0 || end > 24) {
+        alert('Business hours must be between 0 and 24!');
+        e.preventDefault();
+        return false;
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+
+{% block title %}Events - Insider Threat Detection{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-stream"></i> Security Events</h2>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card stat-card success">
+                <div class="card-body">
+                    <h6 class="text-muted">Total Events</h6>
+                    <h3>{{ "{:,}".format(total_events) }}</h3>
+                    <small class="text-muted">All recorded events</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat-card high">
+                <div class="card-body">
+                    <h6 class="text-muted">Anomalous Events</h6>
+                    <h3>{{ "{:,}".format(anomalous_events) }}</h3>
+                    <small class="text-muted">
+                        {% if total_events > 0 %}
+                            {{ "%.1f"|format((anomalous_events / total_events) * 100) }}% of total
+                        {% else %}
+                            0% of total
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat-card low">
+                <div class="card-body">
+                    <h6 class="text-muted">Normal Events</h6>
+                    <h3>{{ "{:,}".format(total_events - anomalous_events) }}</h3>
+                    <small class="text-muted">Non-anomalous activity</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-filter"></i> Filters</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('dashboard.events') }}">
+                <div class="row">
+                    <div class="col-md-3">
+                        <label>Event Type</label>
+                        <select name="event_type" class="form-select">
+                            <option value="">All Types</option>
+                            {% for type in event_types %}
+                            <option value="{{ type }}" {% if current_filters.event_type == type %}selected{% endif %}>
+                                {{ type }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label>User ID</label>
+                        <input type="text" name="user_id" class="form-control" 
+                               value="{{ current_filters.user_id }}" 
+                               placeholder="Enter user ID">
+                    </div>
+                    <div class="col-md-3">
+                        <label>Anomalous</label>
+                        <select name="is_anomalous" class="form-select">
+                            <option value="">All Events</option>
+                            <option value="true" {% if current_filters.is_anomalous == 'true' %}selected{% endif %}>
+                                Anomalous Only
+                            </option>
+                            <option value="false" {% if current_filters.is_anomalous == 'false' %}selected{% endif %}>
+                                Normal Only
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label>&nbsp;</label>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i> Apply Filters
+                            </button>
+                            <a href="{{ url_for('dashboard.events') }}" class="btn btn-secondary">
+                                <i class="fas fa-redo"></i> Clear
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Events Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-list"></i> Events 
+                <span class="badge bg-secondary">{{ events|length }} shown</span>
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if events %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Event ID</th>
+                            <th>User</th>
+                            <th>Type</th>
+                            <th>Activity</th>
+                            <th>Anomalous</th>
+                            <th>Score</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for event in events %}
+                        <tr>
+                            <td>
+                                <small>{{ event.timestamp.strftime('%Y-%m-%d %H:%M:%S') if event.timestamp else 'N/A' }}</small>
+                            </td>
+                            <td>
+                                <code>{{ event.event_id[:12] }}...</code>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('dashboard.user_detail', user_id=event.user_id) }}">
+                                    {{ event.user_id }}
+                                </a>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ event.event_type or 'N/A' }}</span>
+                            </td>
+                            <td>{{ event.activity or 'N/A' }}</td>
+                            <td>
+                                {% if event.is_anomalous %}
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-exclamation-triangle"></i> Yes
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check"></i> No
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if event.anomaly_score is not none %}
+                                    <strong>{{ "%.3f"|format(event.anomaly_score) }}</strong>
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('dashboard.event_detail', event_id=event.event_id) }}" 
+                                   class="btn btn-sm btn-primary">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if pagination.pages > 1 %}
+            <nav aria-label="Events pagination">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('dashboard.events', page=pagination.prev_num, 
+                           event_type=current_filters.event_type, 
+                           user_id=current_filters.user_id,
+                           is_anomalous=current_filters.is_anomalous) }}">
+                            Previous
+                        </a>
+                    </li>
+                    
+                    {% for page_num in pagination.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=2) %}
+                        {% if page_num %}
+                            <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                                <a class="page-link" href="{{ url_for('dashboard.events', page=page_num,
+                                   event_type=current_filters.event_type,
+                                   user_id=current_filters.user_id,
+                                   is_anomalous=current_filters.is_anomalous) }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('dashboard.events', page=pagination.next_num,
+                           event_type=current_filters.event_type,
+                           user_id=current_filters.user_id,
+                           is_anomalous=current_filters.is_anomalous) }}">
+                            Next
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No events found</h5>
+                <p class="text-muted">Try adjusting your filters or check back later</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Top Active Users -->
+    {% if top_users %}
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Top Active Users</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for user_id, count in top_users %}
+                <div class="col-md-6 mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{{ url_for('dashboard.events', user_id=user_id) }}">
+                            <strong>{{ user_id }}</strong>
+                        </a>
+                        <span class="badge bg-primary">{{ "{:,}".format(count) }} events</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.pagination {
+    margin-top: 1rem;
+}
+</style>
+{% endblock %}

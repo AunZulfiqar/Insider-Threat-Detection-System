@@ -1,0 +1,554 @@
+{% extends "base.html" %}
+
+{% block title %}User Detail - {{ user.user_id }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .badge-critical { background-color: #dc3545 !important; color: white !important; }
+    .badge-high { background-color: #fd7e14 !important; color: white !important; }
+    .badge-medium { background-color: #ffc107 !important; color: black !important; }
+    .badge-low { background-color: #28a745 !important; color: white !important; }
+    .badge-normal { background-color: #007bff !important; color: white !important; }
+    
+    .stat-card {
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        text-align: center;
+        border-left: 4px solid #007bff;
+    }
+    
+    .stat-card.critical { border-left-color: #dc3545; }
+    .stat-card.high { border-left-color: #fd7e14; }
+    .stat-card.medium { border-left-color: #ffc107; }
+    .stat-card.low { border-left-color: #28a745; }
+    
+    .stat-card h6 {
+        color: #6c757d;
+        margin-bottom: 10px;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+    
+    .stat-card h3 {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: bold;
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 300px;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- User Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card 
+                {% if user.current_risk_level == 'CRITICAL' %}bg-critical
+                {% elif user.current_risk_level == 'HIGH' %}bg-high
+                {% elif user.current_risk_level == 'MEDIUM' %}bg-medium
+                {% elif user.current_risk_level == 'LOW' %}bg-low
+                {% else %}bg-normal{% endif %} text-white">
+                <div class="card-body">
+                    <h2 class="mb-0">
+                        <i class="fas fa-user-circle"></i>
+                        {{ user.full_name or user.user_id }}
+                    </h2>
+                    <p class="mb-0">
+                        <strong>User ID:</strong> {{ user.user_id }} | 
+                        <strong>Department:</strong> {{ user.department or 'N/A' }} | 
+                        <strong>Role:</strong> {{ user.role or 'N/A' }}
+                        {% if user.supervisor %}| <strong>Supervisor:</strong> {{ user.supervisor }}{% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Risk Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stat-card {{ user.current_risk_level|lower if user.current_risk_level else 'low' }}">
+                <h6><i class="fas fa-shield-alt"></i> Risk Level</h6>
+                <h3>
+                    <span class="badge 
+                        {% if user.current_risk_level == 'CRITICAL' %}badge-critical
+                        {% elif user.current_risk_level == 'HIGH' %}badge-high
+                        {% elif user.current_risk_level == 'MEDIUM' %}badge-medium
+                        {% elif user.current_risk_level == 'LOW' %}badge-low
+                        {% else %}badge-normal{% endif %}">
+                        {{ user.current_risk_level or 'LOW' }}
+                    </span>
+                </h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <h6><i class="fas fa-bell"></i> Total Alerts</h6>
+                <h3>{{ user.total_alerts or 0 }}</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card critical">
+                <h6><i class="fas fa-exclamation-triangle"></i> High Risk Alerts</h6>
+                <h3 class="text-danger">{{ user.high_risk_alerts or 0 }}</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <h6><i class="fas fa-clock"></i> Last Activity</h6>
+                <p class="mb-0">
+                    {% if user.last_activity %}
+                        {{ user.last_activity.strftime('%Y-%m-%d') }}<br>
+                        <small>{{ user.last_activity.strftime('%H:%M') }}</small>
+                    {% else %}
+                        <span class="text-muted">Never</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Baseline vs Actual Behavior Graphs -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line"></i> Behavioral Analysis: Baseline vs Actual
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        <i class="fas fa-info-circle"></i> 
+                        Baseline period: {{ user.baseline_start.strftime('%Y-%m-%d') if user.baseline_start else 'N/A' }} 
+                        to {{ user.baseline_end.strftime('%Y-%m-%d') if user.baseline_end else 'N/A' }}
+                    </p>
+                    
+                    <!-- Activity Patterns Chart -->
+                    <h6 class="mt-4"><i class="fas fa-chart-bar"></i> Daily Activity Patterns</h6>
+                    <div class="chart-container">
+                        <canvas id="activityChart"></canvas>
+                    </div>
+                    
+                    <!-- Deviation Chart -->
+                    <h6 class="mt-4"><i class="fas fa-exclamation-circle"></i> Behavioral Deviations</h6>
+                    <div class="chart-container">
+                        <canvas id="deviationChart"></canvas>
+                    </div>
+                    
+                    <!-- Time Pattern Chart -->
+                    <h6 class="mt-4"><i class="fas fa-clock"></i> Access Time Patterns</h6>
+                    <div class="chart-container">
+                        <canvas id="timePatternChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Information -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-user"></i> User Information</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <th width="40%">User ID:</th>
+                            <td><code>{{ user.user_id }}</code></td>
+                        </tr>
+                        <tr>
+                            <th>Full Name:</th>
+                            <td>{{ user.full_name or 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Department:</th>
+                            <td>{{ user.department or 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Role:</th>
+                            <td>{{ user.role or 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Supervisor:</th>
+                            <td>{{ user.supervisor or 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Work Days:</th>
+                            <td>
+                                {% if user.typical_work_days %}
+                                    {% set days_map = {0: 'Mon', 1: 'Tue', 2: 'Wed', 3: 'Thu', 4: 'Fri', 5: 'Sat', 6: 'Sun'} %}
+                                    {% set work_days = user.typical_work_days.split(',') %}
+                                    {% for day in work_days %}
+                                        <span class="badge bg-secondary">{{ days_map[day|int] }}</span>
+                                    {% endfor %}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Avg Logon Time:</th>
+                            <td>{{ user.avg_logon_time.strftime('%H:%M') if user.avg_logon_time else 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Avg Logoff Time:</th>
+                            <td>{{ user.avg_logoff_time.strftime('%H:%M') if user.avg_logoff_time else 'N/A' }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Baseline Behavior -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-area"></i> Baseline Behavior</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <th width="50%">Avg HTTP Requests/Day:</th>
+                            <td><strong>{{ "%.1f"|format(user.avg_http_requests_per_day) if user.avg_http_requests_per_day else '0' }}</strong></td>
+                        </tr>
+                        <tr>
+                            <th>Avg File Access/Day:</th>
+                            <td><strong>{{ "%.1f"|format(user.avg_file_accesses_per_day) if user.avg_file_accesses_per_day else '0' }}</strong></td>
+                        </tr>
+                        <tr>
+                            <th>Avg Email Count/Day:</th>
+                            <td><strong>{{ "%.1f"|format(user.avg_email_count_per_day) if user.avg_email_count_per_day else '0' }}</strong></td>
+                        </tr>
+                        <tr>
+                            <th>USB Usage Frequency:</th>
+                            <td>
+                                {% if user.usb_usage_frequency %}
+                                    {% if user.usb_usage_frequency >= 0.7 %}
+                                        <span class="badge badge-high">High ({{ "%.1f"|format(user.usb_usage_frequency * 100) }}%)</span>
+                                    {% elif user.usb_usage_frequency >= 0.3 %}
+                                        <span class="badge badge-medium">Medium ({{ "%.1f"|format(user.usb_usage_frequency * 100) }}%)</span>
+                                    {% else %}
+                                        <span class="badge badge-low">Low ({{ "%.1f"|format(user.usb_usage_frequency * 100) }}%)</span>
+                                    {% endif %}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Baseline Period:</th>
+                            <td>
+                                {% if user.baseline_start and user.baseline_end %}
+                                    {{ user.baseline_start.strftime('%Y-%m-%d') }} to {{ user.baseline_end.strftime('%Y-%m-%d') }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Last Alert:</th>
+                            <td>
+                                {% if user.last_alert_date %}
+                                    {{ user.last_alert_date.strftime('%Y-%m-%d %H:%M') }}
+                                {% else %}
+                                    <span class="text-muted">No alerts</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Alerts -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-bell"></i> Recent Alerts</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_alerts %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>Alert ID</th>
+                                    <th>Risk Level</th>
+                                    <th>Risk Score</th>
+                                    <th>Description</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for alert in recent_alerts %}
+                                <tr>
+                                    <td><small>{{ alert.timestamp.strftime('%Y-%m-%d %H:%M') if alert.timestamp else 'N/A' }}</small></td>
+                                    <td><code>{{ alert.alert_id[:12] }}...</code></td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if alert.risk_level == 'CRITICAL' %}badge-critical
+                                            {% elif alert.risk_level == 'HIGH' %}badge-high
+                                            {% elif alert.risk_level == 'MEDIUM' %}badge-medium
+                                            {% elif alert.risk_level == 'LOW' %}badge-low
+                                            {% else %}badge-normal{% endif %}">
+                                            {{ alert.risk_level or 'N/A' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if alert.risk_score is not none %}
+                                            <strong>{{ "%.3f"|format(alert.risk_score) }}</strong>
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ alert.description[:50] if alert.description else 'N/A' }}...</td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if alert.status == 'RESOLVED' %}bg-success
+                                            {% elif alert.status == 'INVESTIGATING' %}bg-warning
+                                            {% else %}bg-primary{% endif %}">
+                                            {{ alert.status or 'OPEN' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('dashboard.alert_detail', alert_id=alert.alert_id) }}" 
+                                           class="btn btn-sm btn-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center py-3">No alerts for this user</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="row">
+        <div class="col-12">
+            <a href="{{ url_for('dashboard.users') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Users
+            </a>
+            <a href="{{ url_for('dashboard.alerts', user_id=user.user_id) }}" class="btn btn-outline-primary">
+                <i class="fas fa-bell"></i> View All Alerts
+            </a>
+            <a href="{{ url_for('dashboard.events', user_id=user.user_id) }}" class="btn btn-outline-info">
+                <i class="fas fa-stream"></i> View All Events
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+<script>
+// Real behavioral analysis data from server (app/utils/behavioral_analysis.py)
+const behavioral = {{ behavioral|tojson }};
+
+// Chart colors
+const colors = {
+    baseline: 'rgba(54, 162, 235, 0.8)',
+    actual: 'rgba(255, 99, 132, 0.8)',
+    deviation: 'rgba(255, 206, 86, 0.8)',
+    normal: 'rgba(75, 192, 192, 0.8)'
+};
+
+// Activity Patterns Chart (Baseline vs Actual)
+const activityCtx = document.getElementById('activityChart').getContext('2d');
+new Chart(activityCtx, {
+    type: 'bar',
+    data: {
+        labels: ['HTTP Requests', 'File Access', 'Email', 'USB Usage'],
+        datasets: [
+            {
+                label: 'Baseline (Avg/Day)',
+                data: [
+                    behavioral.baseline.http_per_day,
+                    behavioral.baseline.file_per_day,
+                    behavioral.baseline.email_per_day,
+                    behavioral.baseline.usb_per_day
+                ],
+                backgroundColor: colors.baseline,
+                borderColor: colors.baseline,
+                borderWidth: 1
+            },
+            {
+                label: 'Current (Recent 7 Days)',
+                data: [
+                    behavioral.current.http_per_day,
+                    behavioral.current.file_per_day,
+                    behavioral.current.email_per_day,
+                    behavioral.current.usb_per_day
+                ],
+                backgroundColor: colors.actual,
+                borderColor: colors.actual,
+                borderWidth: 1
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: true,
+                position: 'top'
+            },
+            title: {
+                display: true,
+                text: 'Activity Comparison: Baseline vs Current Behavior'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Activity Count'
+                }
+            }
+        }
+    }
+});
+
+// Deviation Chart (real daily event counts vs the user's own 7-day average)
+const deviationCtx = document.getElementById('deviationChart').getContext('2d');
+const dailyLabels = behavioral.daily_7d.labels;
+const dailyCounts = behavioral.daily_7d.counts;
+const avgDailyCount = dailyCounts.length
+    ? dailyCounts.reduce((a, b) => a + b, 0) / dailyCounts.length
+    : 0;
+const deviationData = dailyCounts.map(c =>
+    avgDailyCount > 0 ? Math.max(-1, Math.min(1, (c - avgDailyCount) / avgDailyCount)) : 0
+);
+
+new Chart(deviationCtx, {
+    type: 'line',
+    data: {
+        labels: dailyLabels,
+        datasets: [{
+            label: 'Deviation from Baseline',
+            data: deviationData,
+            backgroundColor: colors.deviation,
+            borderColor: colors.deviation,
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: true,
+                position: 'top'
+            },
+            title: {
+                display: true,
+                text: 'Behavioral Deviation Over Time (Last 7 Days)'
+            }
+        },
+        scales: {
+            y: {
+                title: {
+                    display: true,
+                    text: 'Deviation Score'
+                },
+                min: -1,
+                max: 1
+            },
+            x: {
+                title: {
+                    display: true,
+                    text: 'Days'
+                }
+            }
+        }
+    }
+});
+
+// Time Pattern Chart (real hourly activity: 30-day baseline vs actual last 24h)
+const timeCtx = document.getElementById('timePatternChart').getContext('2d');
+const hours = Array.from({length: 24}, (_, i) => `${i.toString().padStart(2, '0')}:00`);
+const baselineActivity = behavioral.hourly_baseline_30d;
+const currentActivity = behavioral.hourly_24h_normal;
+
+new Chart(timeCtx, {
+    type: 'line',
+    data: {
+        labels: hours,
+        datasets: [
+            {
+                label: 'Baseline Pattern',
+                data: baselineActivity,
+                borderColor: colors.baseline,
+                backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            },
+            {
+                label: 'Current Pattern',
+                data: currentActivity,
+                borderColor: colors.actual,
+                backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: true,
+                position: 'top'
+            },
+            title: {
+                display: true,
+                text: 'Activity Time Patterns (Hourly Distribution)'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Activity Count'
+                }
+            },
+            x: {
+                title: {
+                    display: true,
+                    text: 'Time of Day'
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

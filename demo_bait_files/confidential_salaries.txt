@@ -1,0 +1,70 @@
+# CONFIDENTIAL - Employee Compensation Report
+## Fiscal Year 2026 - INTERNAL USE ONLY
+
+### WARNING: This document contains sensitive salary information
+### Distribution restricted to HR and Executive team only
+
+## Executive Compensation
+
+**CEO - John Anderson**
+- Base Salary: $350,000
+- Stock Options: $500,000
+- Performance Bonus: $150,000
+- Total Compensation: $1,000,000
+
+**CFO - Maria Garcia**
+- Base Salary: $280,000
+- Stock Options: $350,000
+- Performance Bonus: $100,000
+- Total Compensation: $730,000
+
+**CTO - Robert Zhang**
+- Base Salary: $290,000
+- Stock Options: $400,000
+- Performance Bonus: $110,000
+- Total Compensation: $800,000
+
+## Senior Management Salary Ranges
+
+**VP Level:**
+- Range: $180,000 - $250,000
+- Average: $215,000
+- Stock Options: $150,000 - $300,000
+
+**Director Level:**
+- Range: $130,000 - $180,000
+- Average: $155,000
+- Stock Options: $50,000 - $150,000
+
+## Department Budgets (Annual)
+
+- Engineering: $8,500,000
+- Sales & Marketing: $6,200,000
+- Operations: $3,800,000
+- HR & Admin: $2,100,000
+
+## Confidential Notes
+
+- CEO considering retirement in 2027
+- CFO received retention bonus of $200,000
+- Planning 15% salary increases for top performers
+- Stock option pool expansion approved: $5M
+
+## Planned Raises (Q2 2026)
+
+1. Engineering team: 8% average increase
+2. Sales team: 10% average increase
+3. Support team: 6% average increase
+4. Executive team: Performance-based only
+
+### DISTRIBUTION LIST (CONFIDENTIAL)
+- John Anderson (CEO)
+- Maria Garcia (CFO)
+- Sarah Mitchell (CHRO)
+- Board of Directors
+
+---
+CLASSIFICATION: HIGHLY CONFIDENTIAL
+DO NOT FORWARD OR SHARE
+Document ID: HR-COMP-2026-001
+Last Updated: January 15, 2026

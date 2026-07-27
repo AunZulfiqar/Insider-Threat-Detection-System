@@ -1,0 +1,52 @@
+# Meeting Notes - Team Sync
+Date: February 1, 2026
+Time: 2:00 PM - 3:00 PM
+Location: Conference Room B
+
+## Attendees
+- Sarah Johnson (PM)
+- Michael Chen (Dev Lead)
+- Emily Rodriguez (QA)
+- David Kim (UX)
+- Lisa Wang (Marketing)
+
+## Agenda
+1. Sprint review
+2. Upcoming deadlines
+3. Resource allocation
+4. Next steps
+
+## Discussion Points
+
+### Sprint Review
+- Completed 8 out of 10 planned stories
+- Two stories moved to next sprint
+- Overall velocity is on track
+- Team morale is good
+
+### Upcoming Deadlines
+- Design mockups due: February 5
+- API documentation: February 10
+- Integration testing: February 15
+
+### Resource Allocation
+- Need additional QA support for testing phase
+- Design team at full capacity
+- Development proceeding as planned
+
+### Blockers
+- Waiting for API approval from security team
+- Need access to staging environment
+
+## Action Items
+- [ ] Sarah: Request additional QA resources
+- [ ] Michael: Follow up with security team
+- [ ] Emily: Prepare test plan document
+- [ ] David: Share updated mockups by EOD
+- [ ] Lisa: Schedule marketing review meeting
+
+## Next Meeting
+February 8, 2026 at 2:00 PM
+
+---
+Notes taken by: Sarah Johnson

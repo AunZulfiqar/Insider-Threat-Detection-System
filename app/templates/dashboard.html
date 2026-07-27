@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Insider Threat Detection{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Risk Level Color Scheme */
+    .badge-critical { background-color: #dc3545 !important; color: white !important; }
+    .badge-high { background-color: #fd7e14 !important; color: white !important; }
+    .badge-medium { background-color: #ffc107 !important; color: white !important; }
+    .badge-low { background-color: #28a745 !important; color: white !important; }
+    .badge-normal { background-color: #007bff !important; color: white !important; }
+    
+    .bg-critical { background-color: #dc3545 !important; }
+    .bg-high { background-color: #fd7e14 !important; }
+    .bg-medium { background-color: #ffc107 !important; }
+    .bg-low { background-color: #28a745 !important; }
+    .bg-normal { background-color: #007bff !important; }
+    
+    .text-critical { color: #dc3545 !important; }
+    .text-high { color: #fd7e14 !important; }
+    .text-medium { color: #ffc107 !important; }
+    .text-low { color: #28a745 !important; }
+    .text-normal { color: #007bff !important; }
+    
+    .border-left-critical { border-left: 4px solid #dc3545 !important; }
+    .border-left-high { border-left: 4px solid #fd7e14 !important; }
+    .border-left-medium { border-left: 4px solid #ffc107 !important; }
+    .border-left-low { border-left: 4px solid #28a745 !important; }
+    .border-left-normal { border-left: 4px solid #007bff !important; }
+    
+    .stat-card.critical { border-left-color: #dc3545; }
+    .stat-card.high { border-left-color: #fd7e14; }
+    .stat-card.medium { border-left-color: #ffc107; }
+    .stat-card.low { border-left-color: #28a745; }
+    .stat-card.normal { border-left-color: #007bff; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-tachometer-alt"></i> Dashboard</h2>
+    <div class="text-muted">
+        <i class="fas fa-clock"></i> Last Updated: <span id="last-updated">{{ now }}</span>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <!-- CRITICAL Alerts -->
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card critical">
+            <div class="card-body">
+                <h6 class="text-muted">
+                    <i class="fas fa-exclamation-circle"></i> Critical Alerts
+                </h6>
+                <h2 class="mb-0 text-critical">{{ critical_alerts }}</h2>
+                <small class="text-muted">Immediate action required</small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- HIGH Alerts -->
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card high">
+            <div class="card-body">
+                <h6 class="text-muted">
+                    <i class="fas fa-exclamation-triangle"></i> High Risk
+                </h6>
+                <h2 class="mb-0 text-high">{{ high_risk_alerts }}</h2>
+                <small class="text-muted">Requires attention</small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Open Alerts -->
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card medium">
+            <div class="card-body">
+                <h6 class="text-muted">
+                    <i class="fas fa-bell"></i> Open Alerts
+                </h6>
+                <h2 class="mb-0 text-medium">{{ open_alerts }}</h2>
+                <small class="text-muted">All unresolved</small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Monitored Users -->
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card normal">
+            <div class="card-body">
+                <h6 class="text-muted">
+                    <i class="fas fa-users"></i> Monitored Users
+                </h6>
+                <h2 class="mb-0 text-normal">{{ total_users }}</h2>
+                <small class="text-muted">Active profiles</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Alerts -->
+<div class="row">
+    <div class="col-md-8 mb-4">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="fas fa-bell"></i> Recent Alerts</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_alerts %}
+                <div class="list-group list-group-flush">
+                    {% for alert in recent_alerts %}
+                    <a href="{{ url_for('dashboard.alert_detail', alert_id=alert.alert_id) }}" 
+                       class="list-group-item list-group-item-action alert-item 
+                              border-left-{% if alert.risk_level == 'CRITICAL' %}critical
+                              {% elif alert.risk_level == 'HIGH' %}high
+                              {% elif alert.risk_level == 'MEDIUM' %}medium
+                              {% elif alert.risk_level == 'LOW' %}low
+                              {% else %}normal{% endif %}">
+                        <div class="d-flex w-100 justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">
+                                    <span class="badge 
+                                        {% if alert.risk_level == 'CRITICAL' %}badge-critical
+                                        {% elif alert.risk_level == 'HIGH' %}badge-high
+                                        {% elif alert.risk_level == 'MEDIUM' %}badge-medium
+                                        {% elif alert.risk_level == 'LOW' %}badge-low
+                                        {% else %}badge-normal{% endif %} me-2">
+                                        {{ alert.risk_level or 'NORMAL' }}
+                                    </span>
+                                    {{ alert.user_id }}
+                                </h6>
+                                <p class="mb-1 small">{{ alert.description }}</p>
+                                <small class="text-muted">
+                                    <i class="fas fa-clock"></i> {{ alert.timestamp.strftime('%Y-%m-%d %H:%M:%S') if alert.timestamp else 'N/A' }}
+                                </small>
+                            </div>
+                            <div>
+                                <span class="status-badge bg-{{ 'success' if alert.status == 'CLOSED' else 'secondary' }}">
+                                    {{ alert.status or 'OPEN' }}
+                                </span>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-5">
+                    <i class="fas fa-check-circle fa-3x mb-3"></i>
+                    <p>No recent alerts</p>
+                </div>
+                {% endif %}
+                
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('dashboard.alerts') }}" class="btn btn-outline-primary btn-sm">
+                        View All Alerts <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Top Risky Users -->
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="fas fa-user-shield"></i> Top Risky Users</h5>
+            </div>
+            <div class="card-body">
+                {% if top_users %}
+                <div class="list-group list-group-flush">
+                    {% for user in top_users %}
+                    <a href="{{ url_for('dashboard.user_detail', user_id=user.user_id) }}" 
+                       class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-0">{{ user.user_id }}</h6>
+                                <small class="text-muted">{{ user.full_name or 'N/A' }}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge 
+                                    {% if user.current_risk_level == 'CRITICAL' %}badge-critical
+                                    {% elif user.current_risk_level == 'HIGH' %}badge-high
+                                    {% elif user.current_risk_level == 'MEDIUM' %}badge-medium
+                                    {% elif user.current_risk_level == 'LOW' %}badge-low
+                                    {% else %}badge-normal{% endif %}">
+                                    {{ user.current_risk_level or 'LOW' }}
+                                </span>
+                                <br>
+                                <small class="text-muted">{{ user.high_risk_alerts or 0 }} alerts</small>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-shield-alt fa-2x mb-2"></i>
+                    <p>No high-risk users</p>
+                </div>
+                {% endif %}
+                
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('dashboard.users') }}" class="btn btn-outline-primary btn-sm">
+                        View All Users <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Events -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="fas fa-stream"></i> Recent Events</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_events %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>User</th>
+                                <th>Event Type</th>
+                                <th>Activity</th>
+                                <th>Anomalous</th>
+                                <th>Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for event in recent_events %}
+                            <tr>
+                                <td><small>{{ event.timestamp.strftime('%Y-%m-%d %H:%M:%S') if event.timestamp else 'N/A' }}</small></td>
+                                <td><strong>{{ event.user_id }}</strong></td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ event.event_type or 'N/A' }}</span>
+                                </td>
+                                <td>{{ event.activity or 'N/A' }}</td>
+                                <td>
+                                    {% if event.is_anomalous %}
+                                    <span class="badge badge-critical">
+                                        <i class="fas fa-exclamation-triangle"></i> Yes
+                                    </span>
+                                    {% else %}
+                                    <span class="badge badge-low">
+                                        <i class="fas fa-check"></i> No
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if event.anomaly_score is not none %}
+                                        {% if event.anomaly_score >= 0.8 %}
+                                            <span class="badge badge-critical">{{ "%.3f"|format(event.anomaly_score) }}</span>
+                                        {% elif event.anomaly_score >= 0.6 %}
+                                            <span class="badge badge-high">{{ "%.3f"|format(event.anomaly_score) }}</span>
+                                        {% elif event.anomaly_score >= 0.4 %}
+                                            <span class="badge badge-medium">{{ "%.3f"|format(event.anomaly_score) }}</span>
+                                        {% elif event.anomaly_score >= 0.2 %}
+                                            <span class="badge badge-low">{{ "%.3f"|format(event.anomaly_score) }}</span>
+                                        {% else %}
+                                            <span class="badge badge-normal">{{ "%.3f"|format(event.anomaly_score) }}</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-5">
+                    <i class="fas fa-inbox fa-3x mb-3"></i>
+                    <p>No events recorded yet</p>
+                </div>
+                {% endif %}
+                
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('dashboard.events') }}" class="btn btn-outline-primary btn-sm">
+                        View All Events <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5><i class="fas fa-rocket"></i> Quick Actions</h5>
+                <div class="btn-group mt-3" role="group">
+                    <a href="{{ url_for('dashboard.events') }}" class="btn btn-primary">
+                        <i class="fas fa-stream"></i> View Events
+                    </a>
+                    <a href="{{ url_for('dashboard.alerts') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-bell"></i> All Alerts
+                    </a>
+                    <a href="{{ url_for('dashboard.users') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-users"></i> All Users
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Update timestamp every minute
+    setInterval(function() {
+        document.getElementById('last-updated').textContent = new Date().toLocaleString();
+    }, 60000);
+</script>
+{% endblock %}

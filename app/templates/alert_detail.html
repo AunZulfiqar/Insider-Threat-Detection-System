@@ -1,0 +1,367 @@
+{% extends "base.html" %}
+
+{% block title %}Alert Details - {{ alert.alert_id }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>Alert Details</h2>
+            <p class="text-muted mb-0">Alert ID: <code>{{ alert.alert_id }}</code></p>
+        </div>
+        <div>
+            <a href="{{ url_for('dashboard.alerts') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Alerts
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column: Alert Information -->
+        <div class="col-lg-8">
+            <!-- Alert Summary Card -->
+            <div class="card mb-4">
+                <div class="card-header bg-{{ 
+                    'danger' if alert.risk_level == 'CRITICAL' else
+                    'warning' if alert.risk_level == 'HIGH' else
+                    'warning' if alert.risk_level == 'MEDIUM' else
+                    'info' if alert.risk_level == 'LOW' else 'light'
+                }} text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        {{ alert.risk_level }} Risk Alert
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">Forensics Alert ID</label>
+                            <div class="fw-bold font-monospace">{{ alert.alert_id }}</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">User ID</label>
+                            <div class="fw-bold">{{ alert.user_id }}</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">Timestamp</label>
+                            <div class="fw-bold">{{ alert.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">Alert Type</label>
+                            <div class="fw-bold">{{ alert.alert_type }}</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">Risk Score</label>
+                            <div class="fw-bold">{{ "%.3f"|format(alert.risk_score) }}</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">Status</label>
+                            <div>
+                                <span class="badge bg-{{ 
+                                    'success' if alert.status == 'CLOSED' else
+                                    'warning' if alert.status == 'INVESTIGATING' else
+                                    'danger' if alert.status == 'OPEN' else
+                                    'secondary'
+                                }}">
+                                    {{ alert.status }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label class="text-muted small">Description</label>
+                            <div class="fw-bold">{{ alert.description }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Related Event Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-calendar-event"></i>
+                        Related Event Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if related_event %}
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">Event ID</label>
+                            <div class="fw-bold font-monospace">{{ related_event.event_id }}</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">Event Type</label>
+                            <div>
+                                <span class="badge bg-primary">{{ related_event.event_type }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">Event Timestamp</label>
+                            <div class="fw-bold">{{ related_event.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">Event Source</label>
+                            <div class="fw-bold">{{ related_event.event_source or 'N/A' }}</div>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label class="text-muted small">Activity</label>
+                            <div class="fw-bold">{{ related_event.activity or 'N/A' }}</div>
+                        </div>
+                        
+                        <!-- Event Details (Parsed JSON) -->
+                        {% if related_event.details %}
+                        <div class="col-12">
+                            <label class="text-muted small mb-2">Event Attributes</label>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <tbody>
+                                        {% set event_details = related_event.details|from_json %}
+                                        {% for key, value in event_details.items() %}
+                                        <tr>
+                                            <td class="text-muted" style="width: 200px;">
+                                                <strong>{{ key|replace('_', ' ')|title }}</strong>
+                                            </td>
+                                            <td>
+                                                {% if key == 'url' and value %}
+                                                    <a href="{{ value }}" target="_blank" class="text-break">
+                                                        {{ value }}
+                                                        <i class="bi bi-box-arrow-up-right ms-1"></i>
+                                                    </a>
+                                                {% elif key in ['pc', 'to', 'from', 'filename', 'content'] %}
+                                                    <span class="font-monospace text-break">{{ value }}</span>
+                                                {% else %}
+                                                    {{ value }}
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning mb-0">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        No related event found for this alert.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Additional Alert Details from event_details -->
+            {% if alert.event_details %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-info-circle"></i>
+                        Alert Event Data
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <tbody>
+                                {% set alert_details = alert.event_details|from_json %}
+                                {% for key, value in alert_details.items() %}
+                                <tr>
+                                    <td class="text-muted" style="width: 200px;">
+                                        <strong>{{ key|replace('_', ' ')|title }}</strong>
+                                    </td>
+                                    <td>{{ value }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Resolution Notes -->
+            {% if alert.resolution_notes %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-journal-text"></i>
+                        Resolution Notes
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ alert.resolution_notes }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right Column: Actions & Timeline -->
+        <div class="col-lg-4">
+            <!-- Quick Actions -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Actions</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('dashboard.update_alert', alert_id=alert.alert_id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="mb-3">
+                            <label class="form-label">Update Status</label>
+                            <select class="form-select" name="status">
+                                <option value="OPEN" {{ 'selected' if alert.status == 'OPEN' }}>Open</option>
+                                <option value="INVESTIGATING" {{ 'selected' if alert.status == 'INVESTIGATING' }}>Investigating</option>
+                                <option value="CLOSED" {{ 'selected' if alert.status == 'CLOSED' }}>Closed</option>
+                                <option value="FALSE_POSITIVE" {{ 'selected' if alert.status == 'FALSE_POSITIVE' }}>False Positive</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Resolution Notes</label>
+                            <textarea class="form-control" name="resolution_notes" rows="4" placeholder="Add notes about your investigation...">{{ alert.resolution_notes or '' }}</textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-save"></i> Update Alert
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- User Profile Summary -->
+            {% if user_profile %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">User Profile</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <label class="text-muted small">User ID</label>
+                        <div class="fw-bold">{{ user_profile.user_id }}</div>
+                    </div>
+                    {% if user_profile.full_name %}
+                    <div class="mb-2">
+                        <label class="text-muted small">Full Name</label>
+                        <div class="fw-bold">{{ user_profile.full_name }}</div>
+                    </div>
+                    {% endif %}
+                    {% if user_profile.department %}
+                    <div class="mb-2">
+                        <label class="text-muted small">Department</label>
+                        <div class="fw-bold">{{ user_profile.department }}</div>
+                    </div>
+                    {% endif %}
+                    {% if user_profile.role %}
+                    <div class="mb-2">
+                        <label class="text-muted small">Role</label>
+                        <div class="fw-bold">{{ user_profile.role }}</div>
+                    </div>
+                    {% endif %}
+                    <div class="mb-2">
+                        <label class="text-muted small">Total Alerts</label>
+                        <div class="fw-bold">{{ user_profile.total_alerts }}</div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="text-muted small">High Risk Alerts</label>
+                        <div class="fw-bold">{{ user_profile.high_risk_alerts }}</div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="text-muted small">Current Risk Level</label>
+                        <div>
+                            <span class="badge bg-{{ 
+                                'danger' if user_profile.current_risk_level == 'CRITICAL' else
+                                'warning' if user_profile.current_risk_level == 'HIGH' else
+                                'warning' if user_profile.current_risk_level == 'MEDIUM' else
+                                'info'
+                            }}">
+                                {{ user_profile.current_risk_level }}
+                            </span>
+                        </div>
+                    </div>
+                    <hr>
+                    <a href="{{ url_for('dashboard.user_detail', user_id=user_profile.user_id) }}" class="btn btn-outline-primary btn-sm w-100">
+                        <i class="bi bi-person-circle"></i> View Full Profile
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Timeline -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Timeline</h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-{{ 
+                                'danger' if alert.risk_level == 'CRITICAL' else
+                                'warning' if alert.risk_level == 'HIGH' else
+                                'warning' if alert.risk_level == 'MEDIUM' else
+                                'info'
+                            }}"></div>
+                            <div class="timeline-content">
+                                <small class="text-muted">{{ alert.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</small>
+                                <div class="fw-bold">Alert Created</div>
+                                <small>System detected {{ alert.risk_level }} risk activity</small>
+                            </div>
+                        </div>
+                        
+                        {% if alert.updated_at and alert.updated_at != alert.created_at %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-info"></div>
+                            <div class="timeline-content">
+                                <small class="text-muted">{{ alert.updated_at.strftime('%Y-%m-%d %H:%M:%S') }}</small>
+                                <div class="fw-bold">Alert Updated</div>
+                                <small>Status: {{ alert.status }}</small>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline-item {
+    position: relative;
+    padding-bottom: 20px;
+}
+
+.timeline-item:last-child {
+    padding-bottom: 0;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -30px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid white;
+}
+
+.timeline-item:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: -25px;
+    top: 12px;
+    bottom: -8px;
+    width: 2px;
+    background-color: #dee2e6;
+}
+
+.timeline-content {
+    padding-left: 0;
+}
+</style>
+{% endblock %}

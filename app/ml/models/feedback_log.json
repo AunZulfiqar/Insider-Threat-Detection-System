@@ -1,0 +1,10 @@
+[
+    {
+        "timestamp": "2026-01-21T18:28:31.398904",
+        "samples_collected": 38,
+        "true_positives": 0,
+        "false_positives": 38,
+        "supervised_model_trained": false,
+        "isolation_forest_retrained": false
+    }
+]

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Simulate Event{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <h1>Event Simulator</h1>
+  <p>Manually trigger a synthetic event to test detection without waiting for the monitoring agents (or TS.py) to fire.</p>
+
+  <form method="post" action="{{ url_for('dashboard.simulate') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="mb-3">
+      <label class="form-label">User</label>
+      <select name="user_id" class="form-select">
+        {% for u in users %}
+          <option value="{{ u.user_id }}">{{ u.user_id }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Event Type</label>
+      <select name="event_type" class="form-select">
+        <option value="LOGON">LOGON</option>
+        <option value="DEVICE">DEVICE</option>
+        <option value="HTTP">HTTP</option>
+        <option value="FILE">FILE</option>
+        <option value="EMAIL">EMAIL</option>
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Trigger Event</button>
+  </form>
+
+  {% if not users %}
+    <p class="text-muted mt-3">No users found — run init_database.py first.</p>
+  {% endif %}
+</div>
+{% endblock %}

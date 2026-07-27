@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}About{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <h1>AI-Powered Insider Threat Detection System</h1>
+  <p class="lead">
+    A hybrid behavioral analytics system combining Isolation Forest anomaly
+    detection with keyword-based rule scanning to flag potential insider
+    threats from logon, device, HTTP, file, and email activity.
+  </p>
+  <h3>Tech Stack</h3>
+  <ul>
+    <li>Flask, Flask-SQLAlchemy, Flask-Login</li>
+    <li>scikit-learn (Isolation Forest, StandardScaler)</li>
+    <li>SQLite</li>
+    <li>Trained on the CERT r4.2 Insider Threat Dataset (Carnegie Mellon University)</li>
+  </ul>
+  <h3>How Detection Works</h3>
+  <ol>
+    <li>Keyword fast-path scans event content for suspicious terms</li>
+    <li>Isolation Forest scores behavioral features for anomalies</li>
+    <li>Contextual factors (after-hours, weekend, device events) adjust final risk severity</li>
+    <li>Alerts are classified into CRITICAL / HIGH / MEDIUM / LOW</li>
+  </ol>
+</div>
+{% endblock %}

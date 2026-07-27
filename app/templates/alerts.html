@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Alerts - Insider Threat Detection{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-exclamation-triangle"></i> Alerts</h2>
+    <div>
+        <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('dashboard.alerts') }}">
+            <div class="row">
+                <div class="col-md-4">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select" onchange="this.form.submit()">
+                        <option value="all">All Statuses</option>
+                        <option value="open" {% if request.args.get('status') == 'open' %}selected{% endif %}>Open</option>
+                        <option value="investigating" {% if request.args.get('status') == 'investigating' %}selected{% endif %}>Investigating</option>
+                        <option value="closed" {% if request.args.get('status') == 'closed' %}selected{% endif %}>Closed</option>
+                        <option value="false_positive" {% if request.args.get('status') == 'false_positive' %}selected{% endif %}>False Positive</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Risk Level</label>
+                    <select name="risk" class="form-select" onchange="this.form.submit()">
+                        <option value="all">All Risk Levels</option>
+                        <option value="critical" {% if request.args.get('risk') == 'critical' %}selected{% endif %}>Critical</option>
+                        <option value="high" {% if request.args.get('risk') == 'high' %}selected{% endif %}>High</option>
+                        <option value="medium" {% if request.args.get('risk') == 'medium' %}selected{% endif %}>Medium</option>
+                        <option value="low" {% if request.args.get('risk') == 'low' %}selected{% endif %}>Low</option>
+                    </select>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Alerts List -->
+<div class="card">
+    <div class="card-header bg-white">
+        <h5 class="mb-0">Alert List ({{ alerts|length }} alerts)</h5>
+    </div>
+    <div class="card-body">
+        {% if alerts %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Alert ID</th>
+                        <th>User</th>
+                        <th>Timestamp</th>
+                        <th>Risk Level</th>
+                        <th>Risk Score</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for alert in alerts %}
+                    <tr>
+                        <td><code>{{ alert.alert_id }}</code></td>
+                        <td><strong>{{ alert.user_id }}</strong></td>
+                        <td><small>{{ alert.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</small></td>
+                        <td>
+                            <span class="badge badge-{{ alert.risk_level.lower() }}">
+                                {{ alert.risk_level }}
+                            </span>
+                        </td>
+                        <td>{{ "%.2f"|format(alert.risk_score) }}</td>
+                        <td><span class="badge bg-secondary">{{ alert.alert_type }}</span></td>
+                        <td><span class="status-badge bg-{{ 'success' if alert.status == 'CLOSED' else 'secondary' }}">{{ alert.status }}</span></td>
+                        <td>
+                            <a href="{{ url_for('dashboard.alert_detail', alert_id=alert.alert_id) }}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-5">
+            <i class="fas fa-inbox fa-3x mb-3"></i>
+            <p>No alerts found</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
