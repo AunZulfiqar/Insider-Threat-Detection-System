@@ -19,6 +19,9 @@ logs/
 # --- Test artifacts ---
 .pytest_cache/
 test_insider_threat.db
+.coverage
+coverage.xml
+htmlcov/
 
 # --- Environment / secrets ---
 .env
